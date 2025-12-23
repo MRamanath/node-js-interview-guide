@@ -192,11 +192,12 @@ node app.js
 
 ---
 
-### 🌍 **Part 8: Deployment** (Week 10)
+### 🌍 **Part 8: Deployment & Publishing** (Week 10)
 
 | # | Topic | What You'll Learn | Difficulty |
-|---|-------|------------------|-----------||
+|---|-------|------------------|-----------|
 | [24](./24-deployment.md) | **Deployment** | Docker, PM2, nginx, CI/CD, monitoring, logging | ⭐⭐⭐ Advanced |
+| [25](./25-npm-packages.md) | **NPM Packages** | Creating, publishing, public/private packages, versioning | ⭐⭐ Intermediate |
 
 <details>
 <summary><b>🌍 Click to see key concepts</b></summary>
@@ -206,6 +207,9 @@ node app.js
 - CI/CD pipelines
 - Production monitoring and logging
 - Scaling and load balancing
+- Publishing npm packages
+- Semantic versioning
+- Private vs public packages
 
 </details>
 
@@ -243,6 +247,7 @@ Each topic includes **10+ interview questions** with detailed answers, code exam
 - ✅ [19. Testing](./19-testing.md)
 - ✅ [20. Performance](./20-performance.md)
 - ✅ [24. Deployment](./24-deployment.md)
+- ✅ [25. NPM Packages](./25-npm-packages.md)
 
 ---
 
@@ -359,8 +364,8 @@ Follow Full-Stack path +
 ### Modern APIs
 [21. WebSockets](./21-websockets.md) • [22. GraphQL](./22-graphql.md) • [23. Microservices](./23-microservices.md)
 
-### Deployment
-[24. Deployment](./24-deployment.md)
+### Deployment & Publishing
+[24. Deployment](./24-deployment.md) • [25. NPM Packages](./25-npm-packages.md)
 
 ---
 
