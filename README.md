@@ -10,7 +10,7 @@
 
 **Comprehensive tutorials • Live examples • Interview questions • Best practices**
 
-[🚀 Quick Start](#-quick-start) • [📖 Topics](#-complete-topics) • [💡 Examples](#-real-world-examples) • [🎤 Interview Prep](#-interview-preparation)
+[🚀 Quick Start](#-quick-start) • [📖 Topics](#-complete-topics) • [🎤 Interview Prep](#-interview-preparation)
 
 </div>
 
