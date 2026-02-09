@@ -601,50 +601,184 @@ app.post('/auth/login/2fa', async (req, res) => {
 
 ### Q1: What is authentication vs authorization?
 **Answer:**
-- **Authentication**: Verifying identity (who you are)
-- **Authorization**: Verifying permissions (what you can do)
+- **Authentication** verifies identity (who you are).
+- **Authorization** verifies permissions (what you can do).
 
-### Q2: JWT vs Session-based auth?
+**Example:**
+```javascript
+// Authentication: verifies identity
+app.get('/me', authenticate, (req, res) => {
+  res.json({ user: req.user });
+});
+
+// Authorization: verifies permissions
+app.delete('/users/:id', authenticate, authorize('admin'), (req, res) => {
+  res.json({ message: 'Deleted' });
+});
+```
+
+**Follow-up clarification (with example):**
+How do you implement authorization in Express?
+```javascript
+function authorize(...roles) {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    next();
+  };
+}
+```
+
+### Q2: JWT vs session-based auth?
 **Answer:**
-- **JWT**: Stateless, scalable, cross-domain, token in client
-- **Session**: Stateful, server stores session, more secure, can revoke immediately
+- **JWT**: Stateless, token stored on client, scales well across services.
+- **Session**: Stateful, server stores session, easier revocation.
 
-### Q3: How does bcrypt work?
-**Answer:** Uses slow hashing algorithm with salt. Each hash is unique. Protects against rainbow table and brute force attacks.
+**Example:**
+```javascript
+// JWT auth header
+fetch('/api/profile', { headers: { Authorization: `Bearer ${token}` } });
 
-### Q4: What is a refresh token?
-**Answer:** Long-lived token for obtaining new access tokens without re-authentication. Access token expires quickly (15min), refresh token lasts longer (7 days).
+// Session cookie (server uses express-session)
+fetch('/api/profile', { credentials: 'include' });
+```
 
-### Q5: How to secure JWTs?
+**Follow-up clarification (with example):**
+When would you choose sessions?
+```text
+If you need immediate server-side revocation or centralized session control
+```
+
+### Q3: How does bcrypt work and why not SHA-256?
+**Answer:** bcrypt is a slow, adaptive hash with salt, resisting brute force. SHA-256 is fast and not suitable for passwords.
+
+**Example:**
+```javascript
+const hash = await bcrypt.hash(password, 12);
+const ok = await bcrypt.compare(password, hash);
+```
+
+**Follow-up clarification (with example):**
+How do you pick the cost factor?
+```text
+Use the highest cost that keeps login under ~200ms (commonly 10–12).
+```
+
+### Q4: What is a refresh token and rotation?
+**Answer:** A refresh token is long-lived and exchanges for short-lived access tokens. Rotation replaces the refresh token on each use to limit replay.
+
+**Example:**
+```javascript
+// Refresh flow
+app.post('/auth/refresh', async (req, res) => {
+  const { refreshToken } = req.body;
+  const payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+  const accessToken = jwt.sign({ id: payload.id }, JWT_SECRET, { expiresIn: '15m' });
+  res.json({ accessToken });
+});
+```
+
+**Follow-up clarification (with example):**
+How do you revoke refresh tokens?
+```text
+Store refresh tokens (or their hashes) in DB/Redis and delete on logout.
+```
+
+### Q5: How do you secure JWTs?
 **Answer:**
-- Strong secret key
-- Short expiration
-- HTTPS only
-- Store securely (not localStorage for sensitive apps)
-- Validate issuer/audience
+- Short expiry, strong secret or RSA keys
+- Validate `iss`, `aud`, `exp`
+- Use HTTPS and secure storage
 
-### Q6: What is OAuth?
-**Answer:** Authorization protocol for third-party access. Allows "Login with Google/Facebook/GitHub" without sharing passwords.
+**Example:**
+```javascript
+const token = jwt.sign(payload, JWT_SECRET, {
+  expiresIn: '15m',
+  issuer: 'myapp',
+  audience: 'myapp-users'
+});
+```
 
-### Q7: How to store passwords?
-**Answer:** 
-- NEVER plain text
-- Use bcrypt/argon2
-- Salt automatically included
-- Cost factor 10-12 for bcrypt
+**Follow-up clarification (with example):**
+Where should tokens be stored?
+```text
+Use httpOnly cookies for browser apps; avoid localStorage for sensitive apps.
+```
 
-### Q8: What is CSRF and how to prevent?
-**Answer:** Cross-Site Request Forgery. Attacker tricks user into unwanted actions. Prevent with CSRF tokens, SameSite cookies.
+### Q6: OAuth 2.0 vs OpenID Connect (OIDC)?
+**Answer:** OAuth is for authorization (access). OIDC adds identity (`id_token`) for authentication.
 
-### Q9: What is XSS?
-**Answer:** Cross-Site Scripting. Injecting malicious scripts. Prevent: sanitize input, escape output, Content Security Policy.
+**Example:**
+```text
+OAuth: access_token -> API access
+OIDC: id_token + access_token -> login + API access
+```
 
-### Q10: How to implement logout with JWT?
-**Answer:** 
-- Client deletes token
-- Blacklist token until expiry (Redis)
-- Short token expiration
-- Use refresh tokens
+**Follow-up clarification (with example):**
+When use Authorization Code + PKCE?
+```text
+Use it for SPAs and mobile apps to prevent code interception.
+```
+
+### Q7: How to implement logout with JWT?
+**Answer:** Client removes token; server can blacklist or rotate refresh tokens.
+
+**Example:**
+```javascript
+await redis.set(`bl:${jti}`, '1', 'EX', 15 * 60); // blacklist access token
+```
+
+**Follow-up clarification (with example):**
+How do you log out everywhere?
+```text
+Use a tokenVersion in the user record and reject tokens with old version.
+```
+
+### Q8: How do you prevent brute-force logins?
+**Answer:** Rate limit, IP throttling, account lockouts, and monitoring.
+
+**Example:**
+```javascript
+const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5 });
+app.post('/login', limiter, loginHandler);
+```
+
+**Follow-up clarification (with example):**
+How to avoid account enumeration?
+```text
+Return a generic error like "Invalid credentials" for all failures.
+```
+
+### Q9: What is CSRF and how do you prevent it?
+**Answer:** CSRF tricks a logged-in user into performing actions. Use CSRF tokens and SameSite cookies.
+
+**Example:**
+```javascript
+app.use(csurf());
+app.get('/form', (req, res) => res.json({ csrfToken: req.csrfToken() }));
+```
+
+**Follow-up clarification (with example):**
+Is SameSite=Lax enough?
+```text
+It helps for top-level navigation but use tokens for full protection.
+```
+
+### Q10: What is XSS and how do you prevent it?
+**Answer:** XSS injects malicious scripts. Prevent with escaping, sanitization, and CSP.
+
+**Example:**
+```javascript
+const safe = escapeHtml(userInput);
+res.send(`<div>${safe}</div>`);
+```
+
+**Follow-up clarification (with example):**
+Why use CSP if you already escape?
+```text
+CSP reduces impact if a bug slips through by blocking inline scripts.
+```
 
 ## 🎯 Best Practices
 
